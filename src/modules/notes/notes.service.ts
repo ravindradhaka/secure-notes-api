@@ -14,16 +14,27 @@ export class NotesService {
     private readonly usersService: UsersService,
   ) {}
 
-  async findAllNotes(userId: string): Promise<NoteEntity[]> {
+  async findAllNotes(userId: string): Promise<NoteEntityInfo[]> {
+    let result: NoteEntityInfo[];
     // Implement logic to retrieve all notes for a user from the database
-    return this.noteRepository.find({ where: { user: { id: userId } } });
+    const allNotes = await this.noteRepository.find({
+      where: { user: { id: userId } },
+    });
+
+    allNotes.map((resp) => {
+      result.push(new NoteEntityInfo(resp.id, resp.title, resp.content));
+    });
+
+    return result;
   }
 
-  async findNoteById(noteId: string, userId: string): Promise<NoteEntity> {
+  async findNoteById(noteId: string, userId: string): Promise<NoteEntityInfo> {
     // Implement logic to retrieve a note by ID for a user from the database
-    return this.noteRepository.findOne({
+    const result = await this.noteRepository.findOne({
       where: { id: noteId, user: { id: userId } },
     });
+
+    return new NoteEntityInfo(result.id, result.title, result.content);
   }
 
   async createNote(
@@ -94,7 +105,7 @@ export class NotesService {
     noteId: string,
     targetUserId: string,
     userId: string,
-  ): Promise<NoteEntity> {
+  ): Promise<NoteEntityInfo | any> {
     // Check if the note exists and belongs to the current user
     const note = await this.noteRepository.findOne({
       where: { id: noteId, user: { id: userId } },
@@ -117,11 +128,11 @@ export class NotesService {
     // Save the updated note
     await this.noteRepository.save(note);
 
-    return note;
+    return new NoteEntityInfo(note.id, note.title, note.content);
   }
 
-  async searchNotes(query: string, userId: string): Promise<NoteEntity[]> {
-    console.log('query', query);
+  async searchNotes(query: string, userId: string): Promise<NoteEntityInfo[]> {
+    let searchResult: NoteEntityInfo[];
     // Implement a basic SQL query to search notes based on the title
     const notes = await this.noteRepository
       .createQueryBuilder('note')
@@ -129,6 +140,10 @@ export class NotesService {
       .andWhere('note.title LIKE :query', { query: `%${query}%` })
       .getMany();
 
-    return notes;
+    notes.map((resp) => {
+      searchResult.push(new NoteEntityInfo(resp.id, resp.title, resp.content));
+    });
+
+    return searchResult;
   }
 }

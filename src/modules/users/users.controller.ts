@@ -10,9 +10,10 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, LoginUserDto } from './dto/user.dto';
-import { AuthService } from 'src/modules/auth/auth.service';
-import { JwtStrategy } from 'src/modules/auth/jwt.strategy';
-import { LocalStrategy } from 'src/modules/auth/local.strategy';
+import { AuthService } from '../auth/auth.service';
+import { LocalStrategy } from '../auth/local.strategy';
+import { JwtStrategy } from '../auth/jwt.strategy';
+
 @Controller('api/auth')
 export class UsersController {
   constructor(

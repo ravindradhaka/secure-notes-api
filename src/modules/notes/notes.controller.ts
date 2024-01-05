@@ -25,28 +25,30 @@ export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Get()
-  async getAllNotes(@Request() req) {
+  async getAllNotes(@Request() req): Promise<NoteEntityInfo[]> {
     const userId = req.user;
     return this.notesService.findAllNotes(userId);
   }
 
   @Get('/searchNotes')
-  async searchNotes(@Request() req, @Query('text') searchText: string) {
+  async searchNotes(
+    @Request() req,
+    @Query('text') searchText: string,
+  ): Promise<NoteEntityInfo[]> {
     const userId = req.user;
     return this.notesService.searchNotes(searchText, userId);
   }
 
   @Get(':id')
-  async getNoteById(@Param('id') id: string, @Request() req) {
+  async getNoteById(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<NoteEntityInfo | any> {
     const userId = req.user;
     const note = await this.notesService.findNoteById(id, userId);
 
     if (!note) {
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Note not found',
-        data: null,
-      };
+      throw new NotFoundException('Note not found');
     }
 
     return note;
@@ -102,7 +104,7 @@ export class NotesController {
     @Param('id') id: string,
     @Body() shareNoteDto: { userId: string },
     @Request() req,
-  ) {
+  ): Promise<NoteEntityInfo | any> {
     const note = await this.notesService.shareNoteWithUser(
       id,
       shareNoteDto.userId,
