@@ -22,6 +22,49 @@ This command will run your NestJS application in development mode, watching for 
 Make sure your NestJS application is properly configured, and your main.ts or main.js file is set up to bootstrap your application
 
 
+# database set up 
+
+1 users  table
+
+```
+CREATE TABLE users (
+  id VARCHAR(36) NOT NULL,
+  username VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  name VARCHAR(255),
+  phoneNumber VARCHAR(255),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+2 - notes table
+
+```CREATE TABLE notes (
+  id CHAR(36) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content VARCHAR(3000),
+  userId CHAR(36) NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (userId) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+
+enviorment set up ---
+
+create .env file and add Mysql Information 
+
+MYSQL_HOST='127.0.0.1'
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=fcgAuction
+MYSQL_DATABASE=secure-notes-api
+
+
+for unit test run ```npm run test``` for unit test
+
+for e2e test ```npm run test:e2e```
 
 # Getting All Notes
 ```
