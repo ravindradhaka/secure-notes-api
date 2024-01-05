@@ -46,4 +46,15 @@ export class UsersService {
   async findByUserId(userId: string): Promise<UserEntity | null> {
     return this.userRepository.findOne({ where: { id: userId } });
   }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const user = await this.findByUserId(userId);
+
+    if (!user) {
+      return false;
+    }
+
+    await this.userRepository.remove(user);
+    return true;
+  }
 }

@@ -42,4 +42,11 @@ export class UsersController {
   getProfile(@Request() req) {
     return req.user;
   }
+
+  @UseGuards(JwtStrategy)
+  @Get('delete')
+  deleteUser(@Request() req) {
+    const userId = req.user;
+    return this.usersService.deleteUser(userId);
+  }
 }
