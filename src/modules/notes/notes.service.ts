@@ -15,7 +15,7 @@ export class NotesService {
   ) {}
 
   async findAllNotes(userId: string): Promise<NoteEntityInfo[]> {
-    let result: NoteEntityInfo[];
+    const result: NoteEntityInfo[] = [];
     // Implement logic to retrieve all notes for a user from the database
     const allNotes = await this.noteRepository.find({
       where: { user: { id: userId } },
@@ -28,11 +28,18 @@ export class NotesService {
     return result;
   }
 
-  async findNoteById(noteId: string, userId: string): Promise<NoteEntityInfo> {
+  async findNoteById(
+    noteId: string,
+    userId: string,
+  ): Promise<NoteEntityInfo | any> {
     // Implement logic to retrieve a note by ID for a user from the database
     const result = await this.noteRepository.findOne({
       where: { id: noteId, user: { id: userId } },
     });
+
+    if (!result) {
+      throw new NotFoundException('Note with the this Id.');
+    }
 
     return new NoteEntityInfo(result.id, result.title, result.content);
   }
@@ -132,7 +139,7 @@ export class NotesService {
   }
 
   async searchNotes(query: string, userId: string): Promise<NoteEntityInfo[]> {
-    let searchResult: NoteEntityInfo[];
+    const searchResult: NoteEntityInfo[] = [];
     // Implement a basic SQL query to search notes based on the title
     const notes = await this.noteRepository
       .createQueryBuilder('note')

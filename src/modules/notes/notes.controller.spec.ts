@@ -4,8 +4,6 @@ import { NotesService } from './notes.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto/note.dto';
 import { NoteEntityInfo } from './response/note.entity.response';
 import { NotFoundException, HttpStatus } from '@nestjs/common';
-import { NoteEntity } from './notes.entity';
-import { UserEntity } from '../users/users.entity';
 
 // Mock the NotesService
 jest.mock('./notes.service');

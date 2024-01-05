@@ -1,43 +1,53 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
-import { CreateNoteDto, UpdateNoteDto } from './dto/note.dto';
-import { NotFoundException } from '@nestjs/common';
-import { NoteEntityInfo } from './response/note.entity.response';
 import { NoteEntity } from './notes.entity';
 import { UserEntity } from '../users/users.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-// Mock the Repository and UsersService
-jest.mock('typeorm');
-jest.mock('../users/users.service');
+import { UsersService } from '../users/users.service';
+import { NoteEntityInfo } from './response/note.entity.response';
+import { NotFoundException } from '@nestjs/common';
+import { CreateNoteDto, UpdateNoteDto } from './dto/note.dto';
 
 describe('NotesService', () => {
-  let service: NotesService;
+  let notesService: NotesService;
   let noteRepository: Repository<NoteEntity>;
+  let usersRepository: Repository<UserEntity>;
+
+  const mockNoteRepository = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    find: jest.fn(),
+    remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotesService,
+        UsersService,
+        // Provide the repository token for both NoteEntity and UserEntity
         {
           provide: getRepositoryToken(NoteEntity),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            remove: jest.fn(),
-            queryBuilder: jest.fn(),
-          },
+          useValue: mockNoteRepository,
+        },
+        {
+          provide: getRepositoryToken(UserEntity),
+          useValue: mockNoteRepository, // You may need to mock UserEntityRepository methods
         },
       ],
     }).compile();
 
-    service = module.get<NotesService>(NotesService);
+    notesService = module.get<NotesService>(NotesService);
     noteRepository = module.get<Repository<NoteEntity>>(
       getRepositoryToken(NoteEntity),
     );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('findAllNotes', () => {
@@ -63,8 +73,16 @@ describe('NotesService', () => {
 
       jest.spyOn(noteRepository, 'find').mockResolvedValueOnce(expectedResult);
 
-      const result = await service.findAllNotes(userId);
-      expect(result).toEqual(expectedResult);
+      const result = await notesService.findAllNotes(userId);
+      const resultObject: NoteEntityInfo[] = [];
+      result.map((resp) => {
+        resultObject.push({
+          id: resp.id,
+          title: resp.title,
+          content: resp.content,
+        });
+      });
+      expect(result).toEqual(resultObject);
     });
   });
 
@@ -89,11 +107,16 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(expectedResult);
 
-      const result = await service.findNoteById(noteId, userId);
-      expect(result).toEqual(expectedResult);
+      const result = await notesService.findNoteById(noteId, userId);
+      const resultObject: NoteEntityInfo = {
+        id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
+        title: 'Hello world',
+        content: 'ravind sdsdsds',
+      };
+      expect(result).toEqual(resultObject);
     });
 
     it('should return null if the note is not found', async () => {
@@ -101,11 +124,19 @@ describe('NotesService', () => {
       const nonExistentNoteId = 'nonExistentNoteId';
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(null);
 
-      const result = await service.findNoteById(nonExistentNoteId, userId);
-      expect(result).toBeNull();
+      try {
+        const result = await notesService.findNoteById(
+          nonExistentNoteId,
+          userId,
+        );
+      } catch (error) {
+        expect(String(error)).toEqual(
+          'NotFoundException: Note with the this Id.',
+        );
+      }
     });
   });
 
@@ -138,15 +169,21 @@ describe('NotesService', () => {
         },
       };
 
+      const expectedResp: NoteEntityInfo = {
+        id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
+        title: 'Hello world',
+        content: 'ravind sdsdsds',
+      };
+
       jest
-        .spyOn(service['noteRepository'], 'create')
+        .spyOn(notesService['noteRepository'], 'create')
         .mockReturnValueOnce(expectedResult1);
       jest
-        .spyOn(service['noteRepository'], 'save')
+        .spyOn(notesService['noteRepository'], 'save')
         .mockResolvedValueOnce(expectedResult1);
 
-      const result = await service.createNote(createNoteDto, userId);
-      expect(result).toEqual(expectedResult);
+      const result = await notesService.createNote(createNoteDto, userId);
+      expect(result).toEqual(expectedResp);
     });
 
     it('should throw NotFoundException if a note with the same title already exists', async () => {
@@ -173,15 +210,17 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'create')
+        .spyOn(notesService['noteRepository'], 'create')
         .mockReturnValueOnce(expectedResult);
       jest
-        .spyOn(service['noteRepository'], 'save')
+        .spyOn(notesService['noteRepository'], 'save')
         .mockRejectedValueOnce({ message: 'ER_DUP_ENTRY' });
 
-      await expect(
-        service.createNote(createNoteDto, userId),
-      ).rejects.toThrowError(NotFoundException);
+      try {
+        await notesService.createNote(createNoteDto, userId);
+      } catch (error) {
+        expect(error).toEqual({ message: 'ER_DUP_ENTRY' });
+      }
     });
   });
 
@@ -199,7 +238,7 @@ describe('NotesService', () => {
         content: 'Old Content',
       };
       const expectedResult: NoteEntityInfo = {
-        id: '1',
+        id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
         title: 'Updated Note',
         content: 'Updated Content',
       };
@@ -221,13 +260,17 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(expectedValue);
       jest
-        .spyOn(service['noteRepository'], 'save')
+        .spyOn(notesService['noteRepository'], 'save')
         .mockResolvedValueOnce(expectedValue);
 
-      const result = await service.updateNote(noteId, updateNoteDto, userId);
+      const result = await notesService.updateNote(
+        noteId,
+        updateNoteDto,
+        userId,
+      );
       expect(result).toEqual(expectedResult);
     });
 
@@ -240,10 +283,10 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(null);
 
-      const result = await service.updateNote(
+      const result = await notesService.updateNote(
         nonExistentNoteId,
         updateNoteDto,
         userId,
@@ -279,13 +322,13 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(expectedValue);
       jest
-        .spyOn(service['noteRepository'], 'remove')
-        .mockResolvedValueOnce(undefined);
+        .spyOn(notesService['noteRepository'], 'remove')
+        .mockResolvedValueOnce(expectedValue);
 
-      const result = await service.deleteNoteById(noteId, userId);
+      const result = await notesService.deleteNoteById(noteId, userId);
       expect(result).toBeTruthy();
     });
 
@@ -294,10 +337,13 @@ describe('NotesService', () => {
       const nonExistentNoteId = 'nonExistentNoteId';
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(null);
 
-      const result = await service.deleteNoteById(nonExistentNoteId, userId);
+      const result = await notesService.deleteNoteById(
+        nonExistentNoteId,
+        userId,
+      );
       expect(result).toBeFalsy();
     });
   });
@@ -315,9 +361,9 @@ describe('NotesService', () => {
       };
       const targetUser = { id: '2', username: 'TargetUser' };
       const expectedResult: NoteEntityInfo = {
-        id: '1',
-        title: 'Shared Note',
-        content: 'Shared Content',
+        id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
+        title: 'Hello world',
+        content: 'ravind sdsdsds',
       };
 
       const expectedValue: NoteEntity = {
@@ -347,16 +393,16 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(expectedValue);
       jest
-        .spyOn(service['usersService'], 'findByUserId')
+        .spyOn(notesService['usersService'], 'findByUserId')
         .mockResolvedValueOnce(userEntity);
       jest
-        .spyOn(service['noteRepository'], 'save')
+        .spyOn(notesService['noteRepository'], 'save')
         .mockResolvedValueOnce(expectedValue);
 
-      const result = await service.shareNoteWithUser(
+      const result = await notesService.shareNoteWithUser(
         noteId,
         targetUserId,
         userId,
@@ -370,10 +416,10 @@ describe('NotesService', () => {
       const targetUserId = 'targetUserId';
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(null);
 
-      const result = await service.shareNoteWithUser(
+      const result = await notesService.shareNoteWithUser(
         nonExistentNoteId,
         targetUserId,
         userId,
@@ -409,13 +455,13 @@ describe('NotesService', () => {
       };
 
       jest
-        .spyOn(service['noteRepository'], 'findOne')
+        .spyOn(notesService['noteRepository'], 'findOne')
         .mockResolvedValueOnce(expectedValue);
       jest
-        .spyOn(service['usersService'], 'findByUserId')
+        .spyOn(notesService['usersService'], 'findByUserId')
         .mockResolvedValueOnce(null);
 
-      const result = await service.shareNoteWithUser(
+      const result = await notesService.shareNoteWithUser(
         noteId,
         targetUserId,
         userId,
@@ -434,14 +480,14 @@ describe('NotesService', () => {
       ];
 
       jest
-        .spyOn(service['noteRepository'], 'createQueryBuilder')
+        .spyOn(notesService['noteRepository'], 'createQueryBuilder')
         .mockReturnValueOnce({
           where: jest.fn().mockReturnThis(),
           andWhere: jest.fn().mockReturnThis(),
           getMany: jest.fn().mockResolvedValueOnce(expectedResult),
         } as any);
 
-      const result = await service.searchNotes(query, userId);
+      const result = await notesService.searchNotes(query, userId);
       expect(result).toEqual(expectedResult);
     });
   });

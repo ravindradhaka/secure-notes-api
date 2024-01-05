@@ -1,8 +1,7 @@
-// src/users/user.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { NoteEntity } from '../notes/notes.entity';
+import { createNoteEntity, NoteEntity } from '../notes/notes.entity';
 
-@Entity('users')
+@Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -22,6 +21,10 @@ export class UserEntity {
   @Column({ nullable: true })
   phoneNumber: string;
 
-  @OneToMany(() => NoteEntity, (note) => note.user)
+  @OneToMany(() => createNoteEntity(), (note) => note.user)
   notes: NoteEntity[];
+}
+
+export function createUserEntity() {
+  return UserEntity;
 }

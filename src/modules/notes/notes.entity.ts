@@ -1,14 +1,14 @@
-// src/notes/note.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   JoinColumn,
+  createConnection,
 } from 'typeorm';
-import { UserEntity } from '../users/users.entity';
+import { UserEntity, createUserEntity } from '../users/users.entity';
 
-@Entity('notes')
+@Entity({ name: 'notes' })
 export class NoteEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,10 +19,14 @@ export class NoteEntity {
   @Column()
   content: string;
 
-  @Column({ name: 'userId' }) // Ensure the name matches the actual column name in the database
+  @Column({ name: 'userId' })
   userId: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.notes)
+  @ManyToOne(() => createUserEntity(), (user) => user.notes)
   @JoinColumn({ name: 'userId' })
   user: UserEntity;
+}
+
+export function createNoteEntity() {
+  return NoteEntity;
 }
