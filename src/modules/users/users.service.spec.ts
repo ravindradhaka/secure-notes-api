@@ -4,7 +4,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './users.entity';
 import { CreateUserDto } from './dto/user.dto';
-import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 describe('UsersService', () => {

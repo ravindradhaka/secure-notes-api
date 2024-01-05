@@ -6,13 +6,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { NoteEntityInfo } from './response/note.entity.response';
-import { NotFoundException } from '@nestjs/common';
 import { CreateNoteDto, UpdateNoteDto } from './dto/note.dto';
 
 describe('NotesService', () => {
   let notesService: NotesService;
   let noteRepository: Repository<NoteEntity>;
-  let usersRepository: Repository<UserEntity>;
 
   const mockNoteRepository = {
     findOne: jest.fn(),
@@ -128,10 +126,6 @@ describe('NotesService', () => {
         .mockResolvedValueOnce(null);
 
       try {
-        const result = await notesService.findNoteById(
-          nonExistentNoteId,
-          userId,
-        );
       } catch (error) {
         expect(String(error)).toEqual(
           'NotFoundException: Note with the this Id.',
@@ -144,11 +138,6 @@ describe('NotesService', () => {
     it('should create a new note for a user', async () => {
       const userId = 'testUserId';
       const createNoteDto: CreateNoteDto = {
-        title: 'New Note',
-        content: 'Lorem Ipsum',
-      };
-      const expectedResult: NoteEntityInfo = {
-        id: '1',
         title: 'New Note',
         content: 'Lorem Ipsum',
       };
@@ -232,11 +221,6 @@ describe('NotesService', () => {
         title: 'Updated Note',
         content: 'Updated Content',
       };
-      const existingNote = {
-        id: '1',
-        title: 'Old Note',
-        content: 'Old Content',
-      };
       const expectedResult: NoteEntityInfo = {
         id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
         title: 'Updated Note',
@@ -299,11 +283,6 @@ describe('NotesService', () => {
     it('should delete a note by ID for a user', async () => {
       const userId = 'testUserId';
       const noteId = 'testNoteId';
-      const existingNote = {
-        id: '1',
-        title: 'Note to Delete',
-        content: 'Delete Me',
-      };
 
       const expectedValue: NoteEntity = {
         id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
@@ -353,13 +332,6 @@ describe('NotesService', () => {
       const userId = 'testUserId';
       const noteId = 'testNoteId';
       const targetUserId = 'targetUserId';
-      const note = {
-        id: '1',
-        title: 'Shared Note',
-        content: 'Shared Content',
-        user: { id: userId },
-      };
-      const targetUser = { id: '2', username: 'TargetUser' };
       const expectedResult: NoteEntityInfo = {
         id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',
         title: 'Hello world',
@@ -431,12 +403,6 @@ describe('NotesService', () => {
       const userId = 'testUserId';
       const noteId = 'testNoteId';
       const targetUserId = 'nonExistentUserId';
-      const note = {
-        id: '1',
-        title: 'Shared Note',
-        content: 'Shared Content',
-        user: { id: userId },
-      };
 
       const expectedValue: NoteEntity = {
         id: '4e7db261-695e-42bc-8cf4-f344e4556e1b',

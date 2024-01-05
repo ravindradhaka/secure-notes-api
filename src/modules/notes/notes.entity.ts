@@ -4,7 +4,6 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  createConnection,
 } from 'typeorm';
 import { UserEntity, createUserEntity } from '../users/users.entity';
 
